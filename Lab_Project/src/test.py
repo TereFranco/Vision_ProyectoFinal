@@ -18,7 +18,6 @@ def stream_video():
             cv2.imwrite(f"captured_image{i}.jpg", frame)
             print("Imagen capturada y guardada como 'captured_image.jpg'")
             i += 1
-            break
     cv2.destroyAllWindows()
 
 if __name__ == "__main__":
