@@ -8,11 +8,16 @@ def stream_video():
     picam.preview_configuration.align()
     picam.configure("preview")
     picam.start()
-
+    i = 0
     while True:
         frame = picam.capture_array()
         cv2.imshow("picam", frame)
         if cv2.waitKey(1) & 0xFF == ord('q'):
+            break
+        if cv2.waitKey(1) & 0xFF == ord('f'):
+            cv2.imwrite(f"captured_image{i}.jpg", frame)
+            print("Imagen capturada y guardada como 'captured_image.jpg'")
+            i += 1
             break
     cv2.destroyAllWindows()
 
