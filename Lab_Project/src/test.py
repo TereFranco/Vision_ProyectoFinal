@@ -11,7 +11,7 @@ def stream_video():
     i = 0
     while True:
         frame = picam.capture_array()
-        key = cv2.waitkey(0)
+        key = cv2.waitKey(0)
         cv2.imshow("picam", frame)
         if cv2.waitKey(1) & 0xFF == ord('q'):
             break
