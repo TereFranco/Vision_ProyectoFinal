@@ -11,11 +11,10 @@ def stream_video():
     i = 0
     while True:
         frame = picam.capture_array()
-        key = cv2.waitKey(0)
         cv2.imshow("picam", frame)
         if cv2.waitKey(1) & 0xFF == ord('q'):
             break
-        if key == ord('f'):
+        if cv2.waitKey(1) & 0xFF == ord('f'):
             cv2.imwrite(f"captured_image{i}.jpg", frame)
             print("Imagen capturada y guardada como 'captured_image.jpg'")
             i += 1
