@@ -9,15 +9,26 @@ def stream_video():
     picam.configure("preview")
     picam.start()
     i = 0
+    
     while True:
         frame = picam.capture_array()
         cv2.imshow("picam", frame)
-        if cv2.waitKey(1) & 0xFF == ord('q'):
+        
+        # Capturar la tecla presionada
+        key = cv2.waitKey(1) & 0xFF
+        
+        # Verificar si se presionó 'q' para salir
+        if key == ord('q'):
             break
-        if cv2.waitKey(1) & 0xFF == ord('f'):
-            cv2.imwrite(f"captured_image{i}.jpg", frame)
-            print("Imagen capturada y guardada como 'captured_image.jpg'")
+            
+        # Verificar si se presionó 'f' para capturar
+        elif key == ord('f'):
+            filename = f"captured_image_{i}.jpg"
+            cv2.imwrite(filename, frame)
+            print(f"Imagen capturada y guardada como '{filename}'")
             i += 1
+    
+    picam.stop()
     cv2.destroyAllWindows()
 
 if __name__ == "__main__":
