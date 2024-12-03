@@ -13,6 +13,9 @@ def record_video(picam: Picamera2, output_file: str):
         print("Presiona 's' para empezar a grabar, y 'q' para detener.")
 
         while True:
+            frame = picam.capture_array()
+            cv2.imshow("picam", frame)
+            
             # Capturar la tecla presionada
             key = cv2.waitKey(1) & 0xFF
 
