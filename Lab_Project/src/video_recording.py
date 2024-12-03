@@ -1,10 +1,14 @@
 from picamera2 import Picamera2, Preview
 import cv2
 
-def record_video(picam: Picamera2, output_file: str):
-    video_config = picam.create_video_configuration(main={"size": (1280, 720), "format": "MJPEG"})
-    picam.configure(video_config)
+def main():
+    output_file = "patron_correcto.mjpeg"
 
+    picam = Picamera2()
+    picam.preview_configuration.main.size=(1280, 720)
+    picam.preview_configuration.main.format="RGB888"
+    picam.preview_configuration.align()
+    picam.configure("preview")
     picam.start()
 
     is_recording = False
@@ -34,13 +38,6 @@ def record_video(picam: Picamera2, output_file: str):
         cv2.destroyAllWindows()
         print(f"Video guardado como {output_file}")
 
-
-
-def main():
-    picam = Picamera2()
-    output_file = "patron_correcto.mjpeg"
-
-    record_video(picam, output_file)
 
 
 if __name__ == "__main__":
