@@ -2,7 +2,6 @@ from picamera2 import Picamera2, Preview
 import cv2
 
 def main():
-    picam = Picamera2()
     output_file = "patron_correcto.mjpeg"
 
     picam = Picamera2()
