@@ -7,17 +7,22 @@ def record_video(picam: Picamera2, output_file: str):
 
     picam.start()
 
+    is_recording = False
+
     try:
-        print("Grabando video. Presiona 'q' para detener.")
-        picam.start_recording(output_file)
+        print("Presiona 's' para empezar a grabar, y 'q' para detener.")
 
         while True:
             # Capturar la tecla presionada
             key = cv2.waitKey(1) & 0xFF
 
-            if key == ord('q'):
+            if key == ord('s') and not is_recording:
+                print("Grabando video. Presiona 'q' para detener.")
+                picam.start_recording(output_file)
+
+            if key == ord('q') and is_recording:
                 print("Tecla 'q' presionada. Deteniendo la grabación...")
-                
+
     finally:
         # Detener la grabación y limpiar
         picam.stop_recording()
