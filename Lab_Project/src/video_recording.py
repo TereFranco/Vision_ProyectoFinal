@@ -25,7 +25,8 @@ def main():
 
             if key == ord('s') and not is_recording:
                 print("Grabando video. Presiona 'q' para detener.")
-                picam.start_recording(output_file)
+                output= open(output_file, "wb")
+                picam.start_recording(output)
 
             if key == ord('q') and is_recording:
                 print("Tecla 'q' presionada. Deteniendo la grabación...")
