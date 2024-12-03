@@ -157,7 +157,6 @@ if __name__ == "__main__":
     ref_images = {
     "circle": "Images/pattern_image_4.jpg",  # Imagen del círculo de referencia
     "square": "Images/pattern_image_10.jpg"  # Imagen del cuadrado de referencia
-}
-
-# Procesar en tiempo real y guardar el video procesado (opcional)
-process_webcam_with_phases(ref_images, output_path="output_video.avi")
+    }   
+    # Procesar en tiempo real y guardar el video procesado (opcional)
+    process_webcam_with_phases(ref_images, output_path="output_video.avi")
