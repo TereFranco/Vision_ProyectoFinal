@@ -58,7 +58,6 @@ def get_shape_center(shape_name, shapes, reference_shapes):
                 return (cx, cy)
     return None
 
-# Procesar video desde la webcam
 def process_webcam_with_phases(ref_images, output_path=None):
     # Cargar referencias (círculo y cuadrado)
     reference_shapes = load_reference_shapes(ref_images)
@@ -69,7 +68,7 @@ def process_webcam_with_phases(ref_images, output_path=None):
     # Iniciar captura desde la webcam
     cap = cv2.VideoCapture(0)  # Cambiar a '1' si usas una segunda cámara
     if not cap.isOpened():
-        print("No se pudo acceder a la webcam.")
+        print("Error: No se pudo acceder a la cámara.")
         return
 
     # Configuración para guardar el video (opcional)
@@ -79,73 +78,81 @@ def process_webcam_with_phases(ref_images, output_path=None):
         frame_height = int(cap.get(4))
         out = cv2.VideoWriter(output_path, fourcc, 30.0, (frame_width, frame_height))
 
-    while cap.isOpened():
-        ret, frame = cap.read()
-        if not ret:
-            break
-
-        # Detectar formas y posición del lápiz
-        shapes = detect_shapes_in_frame(frame)
-        detected_shapes = [match_shapes(c, reference_shapes) for c in shapes]
-        pencil_pos = detect_pencil_position(frame)
-
-        if pencil_pos and "circle" in detected_shapes and "square" in detected_shapes:
-            circle_pos = get_shape_center("circle", shapes, reference_shapes)
-            square_pos = get_shape_center("square", shapes, reference_shapes)
-
-            dx, dy = pencil_pos[0] - circle_pos[0], pencil_pos[1] - circle_pos[1]
-            circle_radius = int(np.sqrt(cv2.contourArea(shapes[0]) / np.pi))
-
-            x, y, w, h = cv2.boundingRect(shapes[1])
-            square_left, square_right = x, x + w
-            square_top, square_bottom = y, y + h
-
-            # Determinar la fase actual
-            if pencil_pos[0] < min(circle_pos[0], square_pos[0]):
-                phase = 1
-            elif dx**2 + dy**2 <= circle_radius**2:
-                phase = 2
-            elif square_left <= pencil_pos[0] <= square_right and square_top <= pencil_pos[1] <= square_bottom:
-                phase = 3
-            elif pencil_pos[0] > max(circle_pos[0], square_pos[0]):
-                phase = 4
-            else:
-                phase = current_phase  # Mantén la fase si no cambió
-
-            # Validar si la transición es válida
-            if phase > current_phase:
-                print(f"Transición: Fase {current_phase} → Fase {phase}")
-                current_phase = phase
-            elif phase < current_phase:
-                print(f"¡Fallo! Transición inválida: Fase {current_phase} → Fase {phase}")
-                current_phase = -1
+    try:
+        while True:
+            ret, frame = cap.read()
+            if not ret:
+                print("Error: No se pudo leer el frame de la cámara.")
                 break
-            elif phase == current_phase:
-                print(f"Fase actual: {current_phase}, sin cambio.")
 
-            # Mostrar la fase actual en el frame
-            if current_phase > 0:
-                cv2.putText(frame, f"Fase: {current_phase}", (50, 50), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 0), 2)
+            # Detectar formas y posición del lápiz
+            shapes = detect_shapes_in_frame(frame)
+            detected_shapes = [match_shapes(c, reference_shapes) for c in shapes]
+            pencil_pos = detect_pencil_position(frame)
+
+            if pencil_pos and "circle" in detected_shapes and "square" in detected_shapes:
+                circle_pos = get_shape_center("circle", shapes, reference_shapes)
+                square_pos = get_shape_center("square", shapes, reference_shapes)
+
+                dx, dy = pencil_pos[0] - circle_pos[0], pencil_pos[1] - circle_pos[1]
+                circle_radius = int(np.sqrt(cv2.contourArea(shapes[0]) / np.pi))
+
+                x, y, w, h = cv2.boundingRect(shapes[1])
+                square_left, square_right = x, x + w
+                square_top, square_bottom = y, y + h
+
+                # Determinar la fase actual
+                if pencil_pos[0] < min(circle_pos[0], square_pos[0]):
+                    phase = 1
+                elif dx**2 + dy**2 <= circle_radius**2:
+                    phase = 2
+                elif square_left <= pencil_pos[0] <= square_right and square_top <= pencil_pos[1] <= square_bottom:
+                    phase = 3
+                elif pencil_pos[0] > max(circle_pos[0], square_pos[0]):
+                    phase = 4
+                else:
+                    phase = current_phase  # Mantén la fase si no cambió
+
+                # Validar si la transición es válida
+                if phase > current_phase:
+                    print(f"Transición: Fase {current_phase} → Fase {phase}")
+                    current_phase = phase
+                elif phase < current_phase:
+                    print(f"¡Fallo! Transición inválida: Fase {current_phase} → Fase {phase}")
+                    current_phase = -1
+                    break
+                elif phase == current_phase:
+                    print(f"Fase actual: {current_phase}, sin cambio.")
+
+                # Mostrar la fase actual en el frame
+                if current_phase > 0:
+                    cv2.putText(frame, f"Fase: {current_phase}", (50, 50), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 0), 2)
+                else:
+                    cv2.putText(frame, "Fallo detectado", (50, 50), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2)
+
             else:
-                cv2.putText(frame, "Fallo detectado", (50, 50), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2)
+                print("Formas no detectadas o lápiz no encontrado.")
 
-        else:
-            print("Formas no detectadas o lápiz no encontrado.")
+            # Guardar el frame procesado si se solicita
+            if output_path:
+                out.write(frame)
 
-        # Guardar el frame procesado si se solicita
+            # Mostrar el frame
+            cv2.imshow("Webcam", frame)
+
+            # Salir con 'q'
+            if cv2.waitKey(1) & 0xFF == ord('q'):
+                break
+
+    except KeyboardInterrupt:
+        print("Interrupción manual detectada. Saliendo...")
+
+    finally:
+        # Liberar recursos
+        cap.release()
         if output_path:
-            out.write(frame)
-
-        # Mostrar el frame
-        cv2.imshow("Webcam", frame)
-
-        if cv2.waitKey(1) & 0xFF == ord('q'):  # Presiona 'q' para salir
-            break
-
-    cap.release()
-    if output_path:
-        out.release()
-    cv2.destroyAllWindows()
+            out.release()
+        cv2.destroyAllWindows()
 
     # Resultado final
     if current_phase == 4:
