@@ -2,7 +2,7 @@ from picamera2 import Picamera2, Preview
 import cv2
 
 def record_video(picam: Picamera2, output_file: str):
-    video_config = picam.create_video_configuration(main={"format": "MJPEG"})
+    video_config = picam.create_video_configuration(main={"size": (1280, 720), "format": "MJPEG"})
     picam.configure(video_config)
 
     picam.start()
@@ -15,7 +15,7 @@ def record_video(picam: Picamera2, output_file: str):
         while True:
             frame = picam.capture_array()
             cv2.imshow("picam", frame)
-            
+
             # Capturar la tecla presionada
             key = cv2.waitKey(1) & 0xFF
 
