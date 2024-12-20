@@ -21,14 +21,14 @@ def stream_video():
         if key == ord('q'):
             break
 
-        
-            
         # Verificar si se presionó 'f' para capturar
         elif key == ord('f'):
             filename = f"captured_image_{i}.jpg"
             cv2.imwrite(filename, frame)
             print(f"Imagen capturada y guardada como '{filename}'")
             i += 1
+
+        hsv_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
     
     picam.stop()
     cv2.destroyAllWindows()

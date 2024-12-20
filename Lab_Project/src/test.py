@@ -26,15 +26,15 @@ def stream_video():
         elif key == ord('f'):
             filename = f"pattern_{i}.jpg"
             filepath = os.path.join("./patterns", filename)
-            cv2.imwrite(filepath, frame)
-            print(f"Imagen capturada y guardada como '{filename}'")
-            i += 1
+            image_captured = cv2.imwrite(filepath, frame)
+            if image_captured:
+                print(f"Imagen capturada y guardada como '{filename}'")
+                i += 1
     
     picam.stop()
     cv2.destroyAllWindows()
 
 if __name__ == "__main__":
-    stream_video()
     os.makedirs("./patterns", exist_ok=True)
     stream_video()
 
