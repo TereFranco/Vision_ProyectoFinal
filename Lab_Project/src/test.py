@@ -34,5 +34,7 @@ def stream_video():
     cv2.destroyAllWindows()
 
 if __name__ == "__main__":
+    stream_video()
     os.makedirs("./patterns", exist_ok=True)
     stream_video()
+

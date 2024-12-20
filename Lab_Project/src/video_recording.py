@@ -2,7 +2,7 @@ from picamera2 import Picamera2, Preview
 import cv2
 
 def main():
-    output_file = "patron_correcto.avi"
+    output_file = "patron_correcto.mjpeg"
 
     picam = Picamera2()
     picam.preview_configuration.main.size=(1280, 720)
