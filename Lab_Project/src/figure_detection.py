@@ -1,6 +1,5 @@
 import cv2
 from picamera2 import Picamera2
-import os
 
 def stream_video():
     picam = Picamera2()
@@ -21,12 +20,13 @@ def stream_video():
         # Verificar si se presionó 'q' para salir
         if key == ord('q'):
             break
+
+        
             
         # Verificar si se presionó 'f' para capturar
         elif key == ord('f'):
-            filename = f"pattern_{i}.jpg"
-            filepath = os.path.join("./patterns", filename)
-            cv2.imwrite(filepath, frame)
+            filename = f"captured_image_{i}.jpg"
+            cv2.imwrite(filename, frame)
             print(f"Imagen capturada y guardada como '{filename}'")
             i += 1
     
@@ -34,5 +34,4 @@ def stream_video():
     cv2.destroyAllWindows()
 
 if __name__ == "__main__":
-    os.makedirs("./patterns", exist_ok=True)
     stream_video()
