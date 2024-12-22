@@ -1,5 +1,6 @@
 import cv2
 from picamera2 import Picamera2
+from figure_detection_functions import *
 
 def stream_video():
     picam = Picamera2()
@@ -8,11 +9,16 @@ def stream_video():
     picam.preview_configuration.align()
     picam.configure("preview")
     picam.start()
-    i = 0
     
+    first_pattern_sequence = []
+    second_pattern_sequence = []
+    third_pattern_sequence = []
+    fourth_pattern_sequence = []
+    
+    identification_completed = False
+
     while True:
         frame = picam.capture_array()
-        cv2.imshow("picam", frame)
         
         # Capturar la tecla presionada
         key = cv2.waitKey(1) & 0xFF
@@ -21,14 +27,28 @@ def stream_video():
         if key == ord('q'):
             break
 
-        # Verificar si se presionó 'f' para capturar
-        elif key == ord('f'):
-            filename = f"captured_image_{i}.jpg"
-            cv2.imwrite(filename, frame)
-            print(f"Imagen capturada y guardada como '{filename}'")
-            i += 1
+        if not identification_completed:
+            if len(first_pattern_sequence) < len(FIRST_PATTERN_SEQUENCE):
+                frame, last_pattern_detected = figure_detection(frame, first_pattern_sequence, last_pattern_detected)
+                if len(first_pattern_sequence) == len(FIRST_PATTERN_SEQUENCE) and first_pattern_sequence != FIRST_PATTERN_SEQUENCE:
+                    first_pattern_sequence = []
+            elif len(second_pattern_sequence) < len(SECOND_PATTERN_SEQUENCE):
+                frame, last_pattern_detected = figure_detection(frame, second_pattern_sequence, last_pattern_detected)
+                if len(second_pattern_sequence) == len(SECOND_PATTERN_SEQUENCE) and second_pattern_sequence != SECOND_PATTERN_SEQUENCE:
+                    second_pattern_sequence = []
+            elif len(third_pattern_sequence) < len(THIRD_PATTERN_SEQUENCE):
+                frame, last_pattern_detected = figure_detection(frame, third_pattern_sequence, last_pattern_detected)
+                if len(third_pattern_sequence) == len(THIRD_PATTERN_SEQUENCE) and third_pattern_sequence != THIRD_PATTERN_SEQUENCE:
+                    third_pattern_sequence = False
+            elif len(fourth_pattern_sequence) < len(FOURTH_PATTERN_SEQUENCE):
+                frame, last_pattern_detected = figure_detection(frame, fourth_pattern_sequence, last_pattern_detected)
+                if len(fourth_pattern_sequence) == len(FOURTH_PATTERN_SEQUENCE) and fourth_pattern_sequence != FOURTH_PATTERN_SEQUENCE:
+                    fourth_pattern_sequence = False
+            else:
+                identification_completed = True
 
-        hsv_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
+        cv2.imshow("picam", frame)
+        
     
     picam.stop()
     cv2.destroyAllWindows()
