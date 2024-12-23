@@ -1,67 +1,102 @@
 import os
 import cv2
-from skimage import feature
 import numpy as np
 
-LOWER_BLACK = (0, 90, 0)
-UPPER_BLACK = (255, 255, 255)
+# Ajustar los rangos de color negro para mejor detección
+LOWER_BLACK = np.array([0, 0, 0])
+UPPER_BLACK = np.array([180, 255, 50])
 
 PATTERN_PATH = "./Patterns/"
-CIRCLE_PATTERN = cv2.imread(os.path.join(PATTERN_PATH,"circle_pattern.jpg"))
-SQUARE_PATTERN = cv2.imread(os.path.join(PATTERN_PATH,"square_pattern.jpg"))
-CIRCLE_LINE_PATTERN = cv2.imread(os.path.join(PATTERN_PATH,"circle_line_pattern.jpg"))
-SQUARE_LINE_PATTERN = cv2.imread(os.path.join(PATTERN_PATH,"square_line_pattern.jpg"))
-LINE_PATTERN = cv2.imread(os.path.join(PATTERN_PATH,"line_pattern.jpg"))
-PATTERNS = [CIRCLE_PATTERN,SQUARE_PATTERN,CIRCLE_LINE_PATTERN,SQUARE_LINE_PATTERN,LINE_PATTERN]
-PATTERNS_NAMES = ["circle","square","circle with line","square with line","line"]
+PATTERNS = {}
+PATTERNS_GRAY = {}
 
-# Gray patterns
-CIRCLE_PATTERN_GRAY = cv2.cvtColor(CIRCLE_PATTERN,cv2.COLOR_BGR2GRAY)
-SQUARE_PATTERN_GRAY = cv2.cvtColor(SQUARE_PATTERN,cv2.COLOR_BGR2GRAY)
-CIRCLE_LINE_PATTERN_GRAY = cv2.cvtColor(CIRCLE_LINE_PATTERN,cv2.COLOR_BGR2GRAY)
-SQUARE_LINE_PATTERN_GRAY = cv2.cvtColor(SQUARE_LINE_PATTERN,cv2.COLOR_BGR2GRAY)
-LINE_PATTERN_GRAY = cv2.cvtColor(LINE_PATTERN,cv2.COLOR_BGR2GRAY)
-PATTERNS_GRAY = [CIRCLE_PATTERN_GRAY,SQUARE_PATTERN_GRAY,CIRCLE_LINE_PATTERN_GRAY,SQUARE_LINE_PATTERN_GRAY,LINE_PATTERN_GRAY]
-
-# Patterns sequences
-FIRST_PATTERN_SEQUENCE = ["line","circle","square"]
-SECOND_PATTERN_SEQUENCE = ["circle with line","square"]
-THIRD_PATTERN_SEQUENCE = ["circle","square with line"]
-FOURTH_PATTERN_SEQUENCE = ["circle","square","line"]
-
-# Threshold
-THRESHOLD_MATCH_TEMPLATE = 0.8
-
-# Colors
-PATTERNS_COLORS = [[255,0,0],[0,255,0],[255,0,255],[0,255,255],[0,0,255]]
-
-# Fonts
-FONT = cv2.FONT_HERSHEY_SIMPLEX
-
-def figure_detection(frame, pattern_sequence, last_pattern_detected):
-    hsv_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
-    black_mask = cv2.inRange(hsv_frame, LOWER_BLACK, UPPER_BLACK)
-    frame_gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-
-    detected_pattern = False
-
-    for i, pattern in enumerate(PATTERNS_GRAY):
-        result = cv2.matchTemplate(frame_gray, pattern, cv2.TM_CCOEFF_NORMED)
-        min_val, max_val, min_loc, max_loc = cv2.minMaxLoc(result)
-        if max_val >= THRESHOLD_MATCH_TEMPLATE:
-            detected_pattern = True
-            top_left = max_loc
-            cv2.putText(frame, PATTERNS_NAMES[i], (top_left[0], top_left[1] - 10), FONT, 0.5, (255,255,255), 2, cv2.LINE_AA)
-            if PATTERNS_NAMES[i] != last_pattern_detected:
-                pattern_sequence.append(PATTERNS_NAMES[i])
-            break
-
-    img_mask = feature.canny(black_mask)
-    img_mask = img_mask.astype(np.uint8) * 255
-    borders = np.where(img_mask == 255)
-    if detected_pattern:
-        # Draw borders on the original frame
-        for y, x in zip(borders[0], borders[1]):
-            frame[y, x] = PATTERNS_COLORS[i] 
+def load_patterns():
+    pattern_files = {
+        'circle': 'circle_pattern.jpg',
+        'square': 'square_pattern.jpg',
+        'circle with line': 'circle_line_pattern.jpg',
+        'square with line': 'square_line_pattern.jpg',
+        'line': 'line_pattern.jpg'
+    }
     
-    return frame, pattern
+    for pattern_name, filename in pattern_files.items():
+        path = os.path.join(PATTERN_PATH, filename)
+        if os.path.exists(path):
+            pattern = cv2.imread(path)
+            if pattern is not None:
+                PATTERNS[pattern_name] = pattern
+                PATTERNS_GRAY[pattern_name] = cv2.cvtColor(pattern, cv2.COLOR_BGR2GRAY)
+
+load_patterns()
+
+# Patrones de secuencia
+FIRST_PATTERN_SEQUENCE = ["line", "circle", "square"]
+SECOND_PATTERN_SEQUENCE = ["circle with line", "square"]
+THIRD_PATTERN_SEQUENCE = ["circle", "square with line"]
+FOURTH_PATTERN_SEQUENCE = ["circle", "square", "line"]
+
+PATTERNS_COLORS = {
+    'circle': (255, 0, 0),
+    'square': (0, 255, 0),
+    'circle with line': (255, 0, 255),
+    'square with line': (0, 255, 255),
+    'line': (0, 0, 255)
+}
+
+def preprocess_frame(frame):
+    frame_blurred = cv2.GaussianBlur(frame, (3, 3), 0)
+    hsv_frame = cv2.cvtColor(frame_blurred, cv2.COLOR_BGR2HSV)
+    black_mask = cv2.inRange(hsv_frame, LOWER_BLACK, UPPER_BLACK)
+    
+    kernel = np.ones((3,3), np.uint8)
+    black_mask = cv2.erode(black_mask, kernel, iterations=1)
+    black_mask = cv2.dilate(black_mask, kernel, iterations=1)
+    
+    return black_mask
+
+def figure_detection(frame, pattern_sequence, last_pattern_detected, min_confidence=0.75):
+    black_mask = preprocess_frame(frame)
+    frame_gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+    
+    detected_pattern = None
+    max_confidence = 0
+    detected_location = None
+    
+    for pattern_name, pattern_gray in PATTERNS_GRAY.items():
+        result = cv2.matchTemplate(frame_gray, pattern_gray, cv2.TM_CCOEFF_NORMED)
+        min_val, max_val, min_loc, max_loc = cv2.minMaxLoc(result)
+        
+        if max_val > max_confidence and max_val >= min_confidence:
+            max_confidence = max_val
+            detected_pattern = pattern_name
+            detected_location = max_loc
+    
+    if detected_pattern:
+        h, w = PATTERNS_GRAY[detected_pattern].shape
+        cv2.rectangle(frame, 
+                     detected_location, 
+                     (detected_location[0] + w, detected_location[1] + h),
+                     PATTERNS_COLORS[detected_pattern], 
+                     2)
+        
+        cv2.putText(frame, 
+                    f"{detected_pattern} ({max_confidence:.2f})", 
+                    (detected_location[0], detected_location[1] - 10),
+                    cv2.FONT_HERSHEY_SIMPLEX,
+                    0.5,
+                    PATTERNS_COLORS[detected_pattern],
+                    2)
+        
+        if detected_pattern != last_pattern_detected:
+            pattern_sequence.append(detected_pattern)
+    
+    edges = cv2.Canny(black_mask, 50, 150)
+    contours, _ = cv2.findContours(edges, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    
+    min_contour_area = 50
+    filtered_contours = [cnt for cnt in contours if cv2.contourArea(cnt) > min_contour_area]
+    
+    if detected_pattern:
+        cv2.drawContours(frame, filtered_contours, -1, PATTERNS_COLORS[detected_pattern], 1)
+    
+    return frame, detected_pattern
