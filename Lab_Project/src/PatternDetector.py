@@ -1,5 +1,5 @@
 import cv2
-from picamera import Picamera2
+from picamera2 import Picamera2
 import numpy as np
 from enum import auto, Enum
 
@@ -27,6 +27,15 @@ class PatternDetector:
         ]
         self.unlocked = False
 
+        # Variables for draw_patterns() function
+        self.margin = 20  # Margen superior
+        self.size = 30  # Tamaño de cada figura
+        self.spacing = 20  # Espaciado entre figuras
+        self.patterns_thickness = 2
+        # Coordenadas iniciales para dibujar
+        self.x_offset = self.spacing
+        self.y_offset = self.margin
+
         # Cargar los parámetros de calibración
         # calibration_data = np.load('calibration_data.npz')
         # self.mtx = calibration_data['mtx']
@@ -43,7 +52,7 @@ class PatternDetector:
         
         # Rango para negro en HSV
         lower_black = np.array([0, 0, 0])
-        upper_black = np.array([180, 255, 30])
+        upper_black = np.array([180, 255, 50])
         
         # Crear máscara para negro
         mask = cv2.inRange(hsv, lower_black, upper_black)
@@ -57,11 +66,11 @@ class PatternDetector:
         
         for contour in contours:
             perimeter = cv2.arcLength(contour, True)
-            approx = cv2.approxPolyDP(contour, 0.04 * perimeter, True)
+            corners = cv2.approxPolyDP(contour, 0.01 * perimeter, True)
             
-            if len(approx) > 8:
+            if len(corners) > 8:
                 circles.append(contour)
-            elif len(approx) == 4:
+            elif len(corners) == 4:
                 squares.append(contour)
             else:
                 [vx, vy, x, y] = cv2.fitLine(contour, cv2.DIST_L2, 0, 0.01, 0.01)
@@ -102,9 +111,10 @@ class PatternDetector:
                 self.detected_patterns = []  # Reiniciar la lista automáticamente
 
         # Mostrar patrones detectados
-        for i, pattern in enumerate(self.detected_patterns):
-            cv2.putText(frame, f"{pattern.name}", (10, 30 + i*30),
-                       cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
+        self.draw_patterns(frame)
+        # for i, pattern in enumerate(self.detected_patterns):
+        #     cv2.putText(frame, f"{pattern.name}", (10, 30 + i*30),
+        #                cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
         
         
         return frame
@@ -122,47 +132,41 @@ class PatternDetector:
         return False
     
     def draw_patterns(self,frame):
-        margin = 20  # Margen superior
-        size = 50  # Tamaño de cada figura
-        spacing = 10  # Espaciado entre figuras
-        
-        # Coordenadas iniciales para dibujar
-        x_offset = spacing
-        y_offset = margin
+        x_offset = self.x_offset
         
         for pattern in self.detected_patterns:
             if pattern == PatternStates.CIRCLE:
                 # Dibujar un círculo grueso
-                center = (x_offset + size // 2, y_offset + size // 2)
-                cv2.circle(frame, center, size // 2, (0,0,0), thickness=5)
+                center = (x_offset + self.size // 2, self.y_offset + self.size // 2)
+                cv2.circle(frame, center, self.size // 2, (0,0,0), thickness=self.patterns_thickness)
             elif pattern == PatternStates.SQUARE:
                 # Dibujar un cuadrado grueso
-                top_left = (x_offset, y_offset)
-                bottom_right = (x_offset + size, y_offset + size)
-                cv2.rectangle(frame, top_left, bottom_right, (0,0,0), thickness=5)
+                top_left = (x_offset, self.y_offset)
+                bottom_right = (x_offset + self.size, self.y_offset + self.size)
+                cv2.rectangle(frame, top_left, bottom_right, (0,0,0), thickness=self.patterns_thickness)
             elif pattern == PatternStates.CIRCLE_W_LINE:
                 # Dibujar un círculo con una línea
-                center = (x_offset + size // 2, y_offset + size // 2)
-                cv2.circle(frame, center, size // 2, (0,0,0), thickness=5)
-                cv2.line(frame, (center[0], center[1] - size // 2),
-                        (center[0], center[1] + size // 2), (0,0,0), thickness=5)
+                center = (x_offset + self.size // 2, self.y_offset + self.size // 2)
+                cv2.circle(frame, center, self.size // 2, (0,0,0), thickness=5)
+                cv2.line(frame, (center[0], center[1] - self.size // 2),
+                        (center[0], center[1] + self.size // 2), (0,0,0), thickness=self.patterns_thickness)
             elif pattern == PatternStates.SQUARE_W_LINE:
                 # Dibujar un cuadrado con una línea
-                top_left = (x_offset, y_offset)
-                bottom_right = (x_offset + size, y_offset + size)
-                cv2.rectangle(frame, top_left, bottom_right, (0,0,0), thickness=5)
-                cv2.line(frame, (x_offset+ size // 2, y_offset),
-                        (x_offset + size // 2, y_offset + size), (0,0,0), thickness=5)
+                top_left = (x_offset, self.y_offset)
+                bottom_right = (x_offset + self.size, self.y_offset + self.size)
+                cv2.rectangle(frame, top_left, bottom_right, (0,0,0), thickness=self.patterns_thickness)
+                cv2.line(frame, (x_offset + self.size // 2, self.y_offset),
+                        (x_offset + self.size // 2, self.y_offset + self.size), (0,0,0), thickness=self.patterns_thickness)
             
             # Avanzar para el siguiente dibujo
-            x_offset += size + spacing
+            x_offset += self.size + self.spacing
 
         return frame
 
     def run(self):
         while True:
             frame = self.picam.capture_array()
-            frame = self.undistort_frame(frame)
+            # frame = self.undistort_frame(frame)
             frame = self.check_pattern(frame)
             cv2.imshow("picam", frame)
             
