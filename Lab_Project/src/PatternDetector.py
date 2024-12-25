@@ -2,6 +2,7 @@ import cv2
 from picamera2 import Picamera2
 import numpy as np
 from enum import auto, Enum
+import time
 
 class PatternStates(Enum):
     CIRCLE = auto()
@@ -36,6 +37,14 @@ class PatternDetector:
         self.x_offset = self.spacing
         self.y_offset = self.margin
 
+        # Para segmentación de color
+        self.lower_white = np.array([72,0,149])
+        self.upper_white = np.array([255,255,255])
+
+        self.lower_black = np.array([74, 15, 117])
+        self.upper_black = np.array([117, 59, 161])
+
+        self.last_detection_time = time.time()
         # Cargar los parámetros de calibración
         # calibration_data = np.load('calibration_data.npz')
         # self.mtx = calibration_data['mtx']
@@ -47,37 +56,40 @@ class PatternDetector:
         return cv2.undistort(frame, self.mtx, self.dist, None, new_mtx)
     
     def detect_shapes(self, frame):
-        # Convertir a HSV
         hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
-        
-        # Rango para negro en HSV
-        lower_black = np.array([0, 0, 0])
-        upper_black = np.array([180, 255, 50])
-        
-        # Crear máscara para negro
-        mask = cv2.inRange(hsv, lower_black, upper_black)
-        
-        # Encontrar contornos en la máscara
+        black_mask = cv2.inRange(hsv, self.lower_black, self.upper_black)
+        white_mask = cv2.inRange(hsv, self.lower_white, self.upper_white)
+        mask = cv2.bitwise_or(black_mask, white_mask)
+
+        # Encontrar contornos
         contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-        
-        circles = []
-        squares = []
-        lines = []
-        
+
+        circles, squares, lines = [], [], []
+
         for contour in contours:
             perimeter = cv2.arcLength(contour, True)
-            corners = cv2.approxPolyDP(contour, 0.01 * perimeter, True)
-            
-            if len(corners) > 8:
-                circles.append(contour)
-            elif len(corners) == 4:
-                squares.append(contour)
-            else:
-                [vx, vy, x, y] = cv2.fitLine(contour, cv2.DIST_L2, 0, 0.01, 0.01)
-                if abs(vx) < 0.1:  # Línea vertical
-                    lines.append((x, y, vx, vy))
-        
+            corners = cv2.approxPolyDP(contour, 0.02 * perimeter, True)
+
+            if len(corners) > 8:  # Posible círculo
+                (x, y), radius = cv2.minEnclosingCircle(contour)
+                area_circle = np.pi * radius**2
+                area_contour = cv2.contourArea(contour)
+                if 0.8 < area_contour / area_circle < 1.2:
+                    circles.append(contour)
+            elif len(corners) == 4:  # Posible cuadrado
+                (x, y, w, h) = cv2.boundingRect(contour)
+                aspect_ratio = float(w) / h
+                if 0.8 < aspect_ratio < 1.2:
+                    squares.append(contour)
+            else:  # Posible línea
+                if len(contour) >= 5:  # Se necesita al menos 5 puntos para fitLine
+                    [vx, vy, x, y] = cv2.fitLine(contour, cv2.DIST_L2, 0, 0.01, 0.01)
+                    length = cv2.arcLength(contour, True)
+                    if length > 50:
+                        lines.append((x, y, vx, vy))
+
         return circles, squares, lines
+
     
     def check_pattern(self, frame):
         circles, squares, lines = self.detect_shapes(frame)
@@ -110,8 +122,6 @@ class PatternDetector:
                 print("Clave incorrecta. Reinicia la lista para volver a intentarlo.")
                 self.detected_patterns = []  # Reiniciar la lista automáticamente
 
-        # Mostrar patrones detectados
-        self.draw_patterns(frame)
         # for i, pattern in enumerate(self.detected_patterns):
         #     cv2.putText(frame, f"{pattern.name}", (10, 30 + i*30),
         #                cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
@@ -147,7 +157,7 @@ class PatternDetector:
             elif pattern == PatternStates.CIRCLE_W_LINE:
                 # Dibujar un círculo con una línea
                 center = (x_offset + self.size // 2, self.y_offset + self.size // 2)
-                cv2.circle(frame, center, self.size // 2, (0,0,0), thickness=5)
+                cv2.circle(frame, center, self.size // 2, (0,0,0), thickness=self.patterns_thickness)
                 cv2.line(frame, (center[0], center[1] - self.size // 2),
                         (center[0], center[1] + self.size // 2), (0,0,0), thickness=self.patterns_thickness)
             elif pattern == PatternStates.SQUARE_W_LINE:
@@ -165,14 +175,24 @@ class PatternDetector:
 
     def run(self):
         while True:
+            current_time = time.time()
             frame = self.picam.capture_array()
             # frame = self.undistort_frame(frame)
-            frame = self.check_pattern(frame)
+
+            # Solo procesar cada 100ms para mejorar el rendimiento
+            if current_time - self.last_detection_time > 0.1:
+                if not self.unlocked:
+                    frame = self.check_pattern(frame)
+                else:
+                    print("Sistema desbloqueado - Iniciando tracking...")
+                    break
+
+            self.last_detection_time = current_time
+            # Mostrar patrones detectados
+            frame = self.draw_patterns(frame)
             cv2.imshow("picam", frame)
-            
             if cv2.waitKey(1) & 0xFF == ord('q'):
                 break
-        
         cv2.destroyAllWindows()
 
         return self.unlocked
