@@ -46,9 +46,9 @@ class PatternDetector:
 
         self.last_detection_time = time.time()
         # Cargar los parámetros de calibración
-        # calibration_data = np.load('calibration_data.npz')
-        # self.mtx = calibration_data['mtx']
-        # self.dist = calibration_data['dist']
+        calibration_data = np.load('calibration_data.npz')
+        self.mtx = calibration_data['intrinsics']
+        self.dist = calibration_data['dist_coeffs']
 
     def undistort_frame(self, frame):
         h, w = frame.shape[:2]

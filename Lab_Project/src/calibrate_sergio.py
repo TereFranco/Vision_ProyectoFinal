@@ -2,12 +2,21 @@ import time
 import numpy as np
 import cv2
 import glob
-
+import imageio
+from typing import List
 # from picamera2 import Picamera2, Preview
 
 
-CHESSBOARD_PATH = "images/chessboard/"
+CHESSBOARD_PATH = "Images_calibration/Input/"
 
+def create_imgs_path(num_images: int):
+    imgs_path = []
+    for i in range(num_images):
+        imgs_path.append(f"Images_calibration/Input/captured_image_{i}.jpg")
+    return imgs_path
+
+def load_images(filenames: List) -> List:
+    return [imageio.imread(filename) for filename in filenames]
 
 def take_chessboard_images(n_images):
     """
@@ -44,25 +53,26 @@ def get_calibration_points(criteria, objp):
     """
     objpoints = []  # 3d point in real world space
     imgpoints = []  # 2d points in image plane
-
-    images = glob.glob(CHESSBOARD_PATH + "*.jpg")
+    images = create_imgs_path(9)
+    #images = load_images(imgs_path)
+    #images = glob.glob(CHESSBOARD_PATH + "*.jpg")
 
     for fname in images:
         img = cv2.imread(fname)
         gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
 
         # Find the chessboard corners
-        ret, corners = cv2.findChessboardCorners(gray, (11, 10), None)
+        ret, corners = cv2.findChessboardCorners(gray, (7, 7), None)
 
         # If found, add object points, image points (after refining them)
         if ret == True:
             objpoints.append(objp)
 
-            corners2 = cv2.cornerSubPix(gray, corners, (11, 11), (-1, -1), criteria)
+            corners2 = cv2.cornerSubPix(gray, corners, (7, 7), (-1, -1), criteria)
             imgpoints.append(corners2)
 
             # Draw and display the corners
-            img = cv2.drawChessboardCorners(img, (11, 10), corners2, ret)
+            img = cv2.drawChessboardCorners(img, (7, 7), corners2, ret)
             cv2.imshow("img", img)
             cv2.waitKey(500)
 
@@ -79,8 +89,8 @@ def calibrate():
 
     # prepare object points, like (0,0,0), (1,0,0), (2,0,0) ....,
     # (9,10,0). Grid is 10x11
-    objp = np.zeros((10 * 11, 3), np.float32)
-    objp[:, :2] = np.mgrid[0:11, 0:10].T.reshape(-1, 2)
+    objp = np.zeros((7 * 7, 3), np.float32)
+    objp[:, :2] = np.mgrid[0:7, 0:7].T.reshape(-1, 2)
 
     # Arrays to store object points and image points from all the images
     objpoints, imgpoints, image_size = get_calibration_points(criteria, objp)
