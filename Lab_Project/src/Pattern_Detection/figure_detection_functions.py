@@ -36,7 +36,7 @@ THIRD_PATTERN_SEQUENCE = ["circle", "square with line"]
 FOURTH_PATTERN_SEQUENCE = ["circle", "square", "line"]
 
 PATTERNS_COLORS = {
-    'circle': (255, 0, 0),
+    'circle': (255, 0, 0), #NO ENTIENDO ESTOS COLORES
     'square': (0, 255, 0),
     'circle with line': (255, 0, 255),
     'square with line': (0, 255, 255),
