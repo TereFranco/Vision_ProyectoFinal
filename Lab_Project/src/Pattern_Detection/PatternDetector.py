@@ -46,7 +46,7 @@ class PatternDetector:
 
         self.last_detection_time = time.time()
         # Cargar los parámetros de calibración
-        calibration_data = np.load('calibration_data.npz')
+        calibration_data = np.load('Calibration/calibration_data.npz') #No sé si funciona el directorio 
         self.mtx = calibration_data['intrinsics']
         self.dist = calibration_data['dist_coeffs']
 
