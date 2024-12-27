@@ -4,7 +4,7 @@ import numpy as np
 from enum import auto, Enum
 import time
 
-class PatternStates(Enum):
+class PatternStates(Enum): #Como máquina de estado? nosé
     CIRCLE = auto()
     SQUARE = auto()
     CIRCLE_W_LINE = auto()
