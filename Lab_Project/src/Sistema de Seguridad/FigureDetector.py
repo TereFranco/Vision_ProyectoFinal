@@ -5,7 +5,7 @@ from Figure import Figure
 
 class FigureDetector:
     def __init__(self, figure):
-        # Initiate camera
+        # Initiate camera (de chat)
         self.picam = Picamera2()
         self.picam.preview_configuration.main.size = (640, 480)
         self.picam.preview_configuration.main.format = "RGB888"  #entiendo que esto está bien?
@@ -13,11 +13,11 @@ class FigureDetector:
         self.picam.configure("preview")
         self.picam.start()
 
-        #Figure to check if is similar
+        #Figura a la que vamos a ver si encuentra en un determinado frame
         self.figure = figure
 
         # Cargar los parámetros de calibración
-        calibration_data = np.load('Calibration/calibration_data.npz') #No se si funciona este path porque está en una carpeta de fuera
+        calibration_data = np.load('Calibration/calibration_data.npz') #No se si funciona este path porque está en una carpeta de fuera!!
         self.mtx = calibration_data['intrinsics']
         self.dist = calibration_data['dist_coeffs']
 
@@ -25,10 +25,10 @@ class FigureDetector:
         """Arregla la distorsión del frame.
 
         Args:
-            frame (_type_): _description_
+            frame (numpy.ndarray): Frame de la cámara que necesita ser corregido.
 
         Returns:
-            _type_: _description_
+            numpy.ndarray: Frame corregido sin distorsión.
         """
         h, w = frame.shape[:2]
         new_mtx, _ = cv2.getOptimalNewCameraMatrix(self.mtx, self.dist, (w, h), 1, (w, h))
@@ -36,14 +36,13 @@ class FigureDetector:
 
 
     def detect_shape(self, frame):
-        """Detector en sí mismo.
+        """Detecta la figura en el frame dado.
 
         Args:
-            frame (_type_): _description_
-            target_figure (_type_): _description_
+            frame (numpy.ndarray): Frame de la cámara en el que se va a buscar la figura.
 
         Returns:
-            _type_: _description_
+            bool: True si la figura es detectada, False en caso contrario.
         """
         # Arreglar distorsión
         frame = self.undistort_frame(frame)
@@ -53,20 +52,22 @@ class FigureDetector:
 
         # Convert to grayscale and apply threshold
         gray = cv2.cvtColor(blur, cv2.COLOR_BGR2GRAY)
-        _, thresh = cv2.threshold(gray, 127, 255, cv2.THRESH_BINARY) #Binariza para el erode de despues
+        thresh = cv2.adaptiveThreshold(gray, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY, 11, 2)
+        #Binariza para el erode de despues con adaptativos para que no dependa de la iluminación
 
         # Apply erosion to reduce noise
-        kernel = np.ones((5, 5), np.uint8)
+        kernel = np.ones((5, 5), np.uint8) #Dimensiones del kernel 
         eroded = cv2.erode(thresh, kernel, iterations=2)
 
-        # Find contours
+        # Find contours in the frame
         contours, _ = cv2.findContours(eroded, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
 
         for contour in contours:
             # Approximate the polygon
             corners = cv2.approxPolyDP(contour, 0.02 * cv2.arcLength(contour, True), True)
 
-            if self.figure.figure_type == "circle": #TODO DE CHAT PARA IDENTIFICAR EL CIRCULO
+            #TODO DE CHAT PARA IDENTIFICAR EL CIRCULO
+            if self.figure.figure_type == "circle": 
                 # Check if the contour resembles a circle
                 area = cv2.contourArea(contour)
                 perimeter = cv2.arcLength(contour, True)
@@ -95,12 +96,11 @@ class FigureDetector:
         return False
 
 
-    def draw_detected_shape(self, frame):
-        """Dibuja en el frame. (De chat)
+    def draw_detected_shape(self, frame): #De chat
+        """Dibuja en el frame. 
 
         Args:
-            frame (_type_): _description_
-            figure_type (_type_): _description_
+            frame (numpy.ndarray): Frame de la cámara en el que se va a dibujar la figura.
         """
         # Draw the figure in the top-left corner
         x, y, size = 20, 20, 100  # Top-left corner and size of the shape
