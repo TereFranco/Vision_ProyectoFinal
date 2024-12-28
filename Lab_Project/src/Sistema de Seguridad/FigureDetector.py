@@ -8,7 +8,7 @@ class FigureDetector:
         # Initiate camera (de chat)
         self.picam = Picamera2()
         self.picam.preview_configuration.main.size = (640, 480)
-        self.picam.preview_configuration.main.format = "RGB888"  #entiendo que esto está bien?
+        self.picam.preview_configuration.main.format = "RGB888"  #entiendo que esto está bien? HARIA FALTA CAMBIAR LOS FAMRES DE COLOR?
         self.picam.preview_configuration.align()
         self.picam.configure("preview")
         self.picam.start()
