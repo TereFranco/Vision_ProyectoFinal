@@ -3,6 +3,12 @@ import time
 from FigureDetector import FigureDetector
 from Figure import Figure
 
+
+def draw_rectangle(frame, color):#Para que en la pantalla aparezca verde si se introduce la contraseña Correcta o rojo si no lo es
+    cv2.rectangle(frame, (0, 0), (640, 480), color, 10)
+    cv2.imshow("Detection Result", frame)
+    cv2.waitKey(2000)  # Display for 2 seconds
+
 def check_password(password):
     detected_pattern = []
     #A VER SI PODEMOS ESPERAR PARA HACER LAS DETECCIONES
@@ -11,6 +17,10 @@ def check_password(password):
     detection_delay = 2  
 
     while True:
+
+        if cv2.waitKey(1) & 0xFF == ord('q'):
+            break
+
         current_time = time.time()
         for figure in valid_figures:
             if current_time - last_detection_time >= detection_delay: #Si ha pasado el tiempo suficiente
@@ -27,13 +37,15 @@ def check_password(password):
         #Ahora para gstionar la contraseña
         if len(detected_pattern) == 4:
             if detected_pattern == password:
-                print("El patrón coincide. Ahora se iniciará el tracker")
+                print("El patrón coincide.")
+                draw_rectangle(frame, (0, 255, 0))  
                 break
             else:
-                print("El patrón no coincide, vuélvalo a intentar.")
-                detected_pattern = []  # Resetemos no? o lo podemos hacer de otra forma nose
-
-        # Para ver las figuras que se han detectado, de chat
+                print("El patrón no coincide.")
+                draw_rectangle(frame, (0, 0, 255))  
+                detected_pattern = []  # Resetear contraseña
+                
+        # Para ver las figuras que se han detectado, de chat (no se yo si sirve de algo)
         cv2.putText(
             frame,
             f"Pattern: {' -> '.join(detected_pattern)}",
@@ -45,10 +57,6 @@ def check_password(password):
         )
 
         cv2.imshow("frame", frame)
-
-        if cv2.waitKey(1) & 0xFF == ord('q'):
-            break
-
     cv2.destroyAllWindows()
 
 if __name__ == "__main__":
