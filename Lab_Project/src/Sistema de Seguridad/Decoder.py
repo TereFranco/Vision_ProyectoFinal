@@ -5,11 +5,24 @@ from Figure import Figure
 
 
 def draw_rectangle(frame, color):#Para que en la pantalla aparezca verde si se introduce la contraseña Correcta o rojo si no lo es
+    """
+    Draws a rectangle on the frame with the specified color.
+
+    Args:
+        frame (numpy.ndarray): The image frame on which the rectangle will be drawn.
+        color (tuple): The color of the rectangle in (B, G, R) format.
+    """
     cv2.rectangle(frame, (0, 0), (640, 480), color, 10)
     cv2.imshow("Detection Result", frame)
     cv2.waitKey(2000)  # Display for 2 seconds
 
 def check_password(password):
+    """
+    Checks if the detected pattern matches the given password.
+
+    Args:
+        password (list): The correct sequence of figures to be detected.
+    """
     detected_pattern = []
     #A VER SI PODEMOS ESPERAR PARA HACER LAS DETECCIONES
     #SI NO FUNCIONA PODEMOS VER EL CODIGO DE SERGIO

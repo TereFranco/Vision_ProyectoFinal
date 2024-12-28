@@ -22,13 +22,13 @@ class FigureDetector:
         self.dist = calibration_data['dist_coeffs']
 
     def undistort_frame(self, frame):
-        """Arregla la distorsión del frame.
+        """Fixes the distortion of the frame.
 
         Args:
-            frame (numpy.ndarray): Frame de la cámara que necesita ser corregido.
+            frame (numpy.ndarray): Frame from the camera that needs to be corrected.
 
         Returns:
-            numpy.ndarray: Frame corregido sin distorsión.
+            numpy.ndarray: Corrected frame without distortion.
         """
         h, w = frame.shape[:2]
         new_mtx, _ = cv2.getOptimalNewCameraMatrix(self.mtx, self.dist, (w, h), 1, (w, h))
@@ -36,13 +36,13 @@ class FigureDetector:
 
 
     def detect_shape(self, frame):
-        """Detecta la figura en el frame dado.
+        """Detects the figure in the given frame.
 
         Args:
-            frame (numpy.ndarray): Frame de la cámara en el que se va a buscar la figura.
+            frame (numpy.ndarray): Frame from the camera in which the figure will be searched.
 
         Returns:
-            bool: True si la figura es detectada, False en caso contrario.
+            bool: True if the figure is detected, False otherwise.
         """
         # Arreglar distorsión
         frame = self.undistort_frame(frame)
@@ -59,6 +59,8 @@ class FigureDetector:
         kernel = np.ones((5, 5), np.uint8) #Dimensiones del kernel 
         eroded = cv2.erode(thresh, kernel, iterations=2)
 
+        cv2.imshow("eroded", eroded) #TERE usa esto para ver si esta pillandolo
+        
         # Find contours in the frame
         contours, _ = cv2.findContours(eroded, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
 
@@ -97,10 +99,10 @@ class FigureDetector:
 
 
     def draw_detected_shape(self, frame): #De chat
-        """Dibuja en el frame. 
+        """Draws on the frame.
 
         Args:
-            frame (numpy.ndarray): Frame de la cámara en el que se va a dibujar la figura.
+            frame (numpy.ndarray): Frame from the camera where the figure will be drawn.
         """
         # Draw the figure in the top-left corner
         x, y, size = 20, 20, 100  # Top-left corner and size of the shape
