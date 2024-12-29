@@ -1,4 +1,5 @@
-from picamera2 import Picamera2, Preview
+from picamera2 import Picamera2
+
 import cv2
 
 def main():
