@@ -1,8 +1,10 @@
 class Figure:
-    def __init__(self, figure_type: str, color_name: str, color_rgb: tuple[int, int, int], n_vertex: int):
+    def __init__(self, figure_type: str, color_name: str, color_rgb: tuple[int, int, int], upper_color: tuple [int, int, int], lower_color: tuple[int, int, int], n_vertex: int):
         self.figure_type: str = figure_type
         self.color_name: str = color_name
         self.color_rgb: tuple[int, int, int] = color_rgb
+        self.upper_color: tuple[int, int, int] = upper_color
+        self.lower_color: tuple[int, int, int] = lower_color
         self.n_vertex: int = n_vertex
 
     def color_within_tolerance(self, other_color: tuple[int, int, int], tolerance: int = 40) -> bool:
@@ -30,4 +32,3 @@ class Figure:
     
     def __str__(self) -> str:
         return f"Figure({self.figure_type}, {self.color_name}, {self.n_vertex})"
-    
