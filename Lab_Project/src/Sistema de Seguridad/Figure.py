@@ -7,7 +7,7 @@ class Figure:
         self.lower_color: tuple[int, int, int] = lower_color
         self.n_vertex: int = n_vertex
 
-    def color_within_tolerance(self, other_color: tuple[int, int, int], tolerance: int = 40) -> bool:
+    def color_within_tolerance(self, other_color: tuple[int, int, int], tolerance: int = 60) -> bool:
         """
         Verifica si el color está dentro de un rango de tolerancia.
 
@@ -20,14 +20,10 @@ class Figure:
         """
         return all(abs(c1 - c2) <= tolerance for c1, c2 in zip(self.color_rgb, other_color))
 
-    def __eq__(self, other: object) -> bool:
-        if not isinstance(other, Figure):
-            return False
+    def is_similar(self, other_color_rgb, other_n_vertex) -> bool:
         return (
-            self.figure_type == other.figure_type and
-            self.color_name == other.color_name and
-            self.color_within_tolerance(other.color_rgb) and
-            self.n_vertex == other.n_vertex
+            self.color_within_tolerance(other_color_rgb) and
+            self.n_vertex == other_n_vertex
         )
     
     def __str__(self) -> str:
