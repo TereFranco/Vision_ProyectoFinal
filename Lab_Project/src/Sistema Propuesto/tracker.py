@@ -1,6 +1,7 @@
 import cv2
 import numpy as np
 from picamera2 import Picamera2
+from Figure import Figure
 
 class Tracker:
     def __init__(self):
@@ -14,6 +15,11 @@ class Tracker:
         self.kf = self.create_kalman_filter()
         self.term_crit = (cv2.TERM_CRITERIA_EPS | cv2.TERM_CRITERIA_COUNT, 30, 1)
         self.meanshift_threshold = 15
+
+        # For traffic lights
+        red_circle = Figure("circle", "red", (192,0,0), np.array([0,144,154]), np.array([13,255,255]),9)
+        green_circle = Figure("circle", "green", (0,176,80), np.array([40, 100, 50]), np.array([100, 255, 255]),9)
+        self.lights = [red_circle, green_circle]
 
     def create_kalman_filter(self): #inicializar kalman de practica 4
         """Initialize the Kalman filter."""
@@ -131,7 +137,6 @@ class Tracker:
         while True:
             frame = self.picam.capture_array()
             
-
             key = cv2.waitKey(1) & 0xFF
 
             if key == ord('s') and not self.is_tracking:
@@ -140,6 +145,7 @@ class Tracker:
                 self.is_tracking = True
 
             if self.is_tracking:
+                self.detect_traffic_light_color(frame)
                 frame = self.correct_and_predict(frame)
 
             cv2.imshow("picam", frame)
@@ -151,42 +157,38 @@ class Tracker:
         self.picam.stop()
         cv2.destroyAllWindows()
 
-def detect_traffic_light_color(frame): #de chat para la parte opcional, para detectar los colores de señales de trafico, rojo y verde
-    """
-    Detect the color of traffic lights in the given frame.
+    def detect_traffic_light_color(self,frame): #de chat para la parte opcional, para detectar los colores de señales de trafico, rojo y verde
+        """
+        Detect the color of traffic lights in the given frame.
 
-    Args:
-        frame (numpy.ndarray): The current frame of the video.
+        Args:
+            frame (numpy.ndarray): The current frame of the video.
 
-    Returns:
-        str: The detected color ("Red", "Green", or "Unknown").
-    """
-    hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
-    red_lower1 = np.array([0, 100, 100])
-    red_upper1 = np.array([10, 255, 255])
-    red_lower2 = np.array([160, 100, 100])# dos de rojo q lo dice chat
-    red_upper2 = np.array([180, 255, 255])
-    green_lower = np.array([40, 50, 50])
-    green_upper = np.array([90, 255, 255])
-
-    red_mask1 = cv2.inRange(hsv, red_lower1, red_upper1)
-    red_mask2 = cv2.inRange(hsv, red_lower2, red_upper2)
-    green_mask = cv2.inRange(hsv, green_lower, green_upper)
-
-    red_mask = cv2.bitwise_or(red_mask1, red_mask2)
-
-    red_pixels = cv2.countNonZero(red_mask)
-    green_pixels = cv2.countNonZero(green_mask)
-
-    if red_pixels > green_pixels and red_pixels > 50:
-        return "Red"
-    elif green_pixels > red_pixels and green_pixels > 50:
-        return "Green"
-    else:
-        return "Unknown"
-
-
-
+        Returns:
+            str: The detected color ("Red", "Green", or "Unknown").
+        """
+        hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
+        
+        for light in self.lights:
+            mask = cv2.inRange(hsv, light.get_lower_color(), light.get_upper_color())
+            # Apply erosion to reduce noise
+            kernel = np.ones((5, 5), np.uint8) #Dimensiones del kernel 
+            eroded = cv2.erode(mask, kernel, iterations=6)
+            
+            # Find contours in the frame
+            contours, _ = cv2.findContours(eroded, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+            for contour in contours:
+                # Check if the contour resembles a circle
+                area = cv2.contourArea(contour)
+                perimeter = cv2.arcLength(contour, True)
+                if perimeter == 0:  # Avoid division by zero
+                    continue
+                circularity = 4 * np.pi * (area / (perimeter ** 2))
+                if 0.8 <= circularity <= 1.2:  # Circularity threshold for circles
+                    if light.color_name == "green":
+                        print(f"GREEN traffic light detected. I'll continue.")
+                    else:
+                        print(f"RED traffic light detected. I'll stop.")
 
 
 if __name__ == "__main__":
