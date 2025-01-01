@@ -1,10 +1,12 @@
+import numpy as np
+
 class Figure:
-    def __init__(self, figure_type: str, color_name: str, color_rgb: tuple[int, int, int], upper_color: tuple [int, int, int], lower_color: tuple[int, int, int], n_vertex: int):
+    def __init__(self, figure_type: str, color_name: str, color_rgb: tuple[int, int, int], lower_color: tuple [int, int, int], upper_color: tuple[int, int, int], n_vertex: int):
         self.figure_type: str = figure_type
         self.color_name: str = color_name
         self.color_rgb: tuple[int, int, int] = color_rgb
-        self.upper_color: tuple[int, int, int] = upper_color
-        self.lower_color: tuple[int, int, int] = lower_color
+        self.lower_color: np.array[int, int, int] = lower_color
+        self.upper_color: np.array[int, int, int] = upper_color
         self.n_vertex: int = n_vertex
 
     def color_within_tolerance(self, other_color: tuple[int, int, int], tolerance: int = 60) -> bool:
@@ -20,6 +22,15 @@ class Figure:
         """
         return all(abs(c1 - c2) <= tolerance for c1, c2 in zip(self.color_rgb, other_color))
 
+    def get_color_rgb(self) -> tuple:
+        return self.color_rgb
+    
+    def get_lower_color(self) -> np.array:
+        return self.lower_color
+    
+    def get_upper_color(self) -> np.array:
+        return self.upper_color
+    
     def is_similar(self, other_color_rgb, other_n_vertex) -> bool:
         return (
             self.color_within_tolerance(other_color_rgb) and

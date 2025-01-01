@@ -16,25 +16,6 @@ class FigureDetector:
         #Figura a la que vamos a ver si encuentra en un determinado frame
         self.figure = figure
 
-        # Cargar los parámetros de calibración
-        calibration_data = np.load('../Calibration/calibration_data.npz') #No se si funciona este path porque está en una carpeta de fuera!!
-        self.mtx = calibration_data['mtx']
-        self.dist = calibration_data['dist']
-
-    def undistort_frame(self, frame):
-        """Fixes the distortion of the frame.
-
-        Args:
-            frame (numpy.ndarray): Frame from the camera that needs to be corrected.
-
-        Returns:
-            numpy.ndarray: Corrected frame without distortion.
-        """
-        h, w = frame.shape[:2]
-        new_mtx, _ = cv2.getOptimalNewCameraMatrix(self.mtx, self.dist, (w, h), 1, (w, h))
-        return cv2.undistort(frame, self.mtx, self.dist, None, new_mtx)
-
-
     def detect_shape(self, frame):
         """Detects the figure in the given frame.
 
@@ -50,7 +31,7 @@ class FigureDetector:
         # la gausiiana
         # blur = cv2.GaussianBlur(frame, (5, 5), 0)
 
-        hsv = cv2.cvtColor(frame, cv2.COLOR_RGB2HSV)
+        hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
         mask = cv2.inRange(hsv,self.figure.lower_color,self.figure.upper_color)
         cv2.imshow('mask', mask)
 
@@ -76,7 +57,6 @@ class FigureDetector:
         for contour in contours:
             # Approximate the polygon
             corners = cv2.approxPolyDP(contour, 0.02 * cv2.arcLength(contour, True), True)
-            print(len(corners))
             #TODO DE CHAT PARA IDENTIFICAR EL CIRCULO
             if self.figure.figure_type == "circle": 
                 # Check if the contour resembles a circle
@@ -123,8 +103,8 @@ class FigureDetector:
             frame (numpy.ndarray): Frame from the camera where the figure will be drawn.
         """
         # Draw the figure in the top-left corner
-        x, y, size = 20, 20, 100  # Top-left corner and size of the shape
-        cv2.rectangle(frame, (x, y), (x + size, y + size), (0, 255, 0), 2)
+        x, y, size = 20, 20, 20  # Top-left corner and size of the shape
+        cv2.rectangle(frame, (x, y), (x + size, y + size), self.figure.get_color_rgb(), thickness=-1)
         cv2.putText(
             frame,
             self.figure.figure_type,
@@ -135,23 +115,23 @@ class FigureDetector:
             2,
         )
 
-
 if __name__ == "__main__":
     valid_figures = [
         Figure("circle", "blue", (0,112, 192), np.array([65,120,69]), np.array([91,255,98]), 9), #cuantas esquinas le pongo?
-        Figure("square", "green", (0,176,80), np.array([54,62,0]), np.array([179,255,255]), 4),
+        Figure("square", "green", (0,176,80), np.array([40, 100, 50]), np.array([100, 255, 255]), 4), # (0,176,80)
         Figure("triangle", "green", (255,0,0), np.array([65,120,69]), np.array([91,255,98]), 3),
         Figure("pentagon", "purple", (112,48,160), np.array([65,120,69]), np.array([91,255,98]), 5),
     ]
 
     # Intentamos solo el cuadrado, luego probar el circulo 
-    square = valid_figures[1]
+    square = valid_figures[0]
 
     detector = FigureDetector(square)
-
+    
     while True:
         frame = detector.picam.capture_array() # no se muy bien como captura esto los frames, de chat
         detected = detector.detect_shape(frame)
+
         if detected:
             detector.draw_detected_shape(frame)
 
