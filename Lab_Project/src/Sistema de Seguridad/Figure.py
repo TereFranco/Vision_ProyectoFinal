@@ -25,11 +25,25 @@ class Figure:
     def get_color_rgb(self) -> tuple:
         return self.color_rgb
     
+    def get_color_bgr(self) -> tuple:
+        return self.color_rgb[::-1]
+
     def get_lower_color(self) -> np.array:
         return self.lower_color
     
     def get_upper_color(self) -> np.array:
         return self.upper_color
+    
+    def __eq__(self, other):
+        if isinstance(other, Figure):
+            return (self.figure_type == other.figure_type and 
+                    self.color_name == other.color_name and 
+                    self.color_rgb == other.color_rgb and 
+                    np.array_equal(self.lower_color, other.lower_color) and
+                    np.array_equal(self.upper_color, other.upper_color) and
+                    self.n_vertex == other.n_vertex)
+        
+        return False
     
     def is_similar(self, other_color_rgb, other_n_vertex) -> bool:
         return (
