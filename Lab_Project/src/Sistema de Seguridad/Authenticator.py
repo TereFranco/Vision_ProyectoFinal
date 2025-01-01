@@ -82,6 +82,7 @@ class Authenticator:
             if cv2.waitKey(1) & 0xFF == ord('q'):
                 break
                 
+        self.picam.stop()
         cv2.destroyAllWindows()
 
     def draw_detected_pattern(self, frame):

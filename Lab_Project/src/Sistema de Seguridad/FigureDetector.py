@@ -126,9 +126,6 @@ if __name__ == "__main__":
         Figure("pentagon", "purple", (112,48,160), np.array([123,125,23]), np.array([161,255,178]), 5),
     ]
 
-    # Intentamos solo el cuadrado, luego probar el circulo 
-    # square = valid_figures[0]
-
     detector = FigureDetector()
     
     while True:
@@ -146,5 +143,6 @@ if __name__ == "__main__":
 
         if cv2.waitKey(1) & 0xFF == ord('q'):
             break
-
+        
+    detector.picam.stop()
     cv2.destroyAllWindows()
