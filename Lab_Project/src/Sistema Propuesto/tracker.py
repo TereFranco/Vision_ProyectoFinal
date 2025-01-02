@@ -2,6 +2,7 @@ import cv2
 import numpy as np
 from picamera2 import Picamera2
 from Figure import Figure
+import time
 
 class Tracker:
     def __init__(self):
@@ -17,9 +18,11 @@ class Tracker:
         self.meanshift_threshold = 15
 
         # For traffic lights
-        red_circle = Figure("circle", "red", (192,0,0), np.array([0,144,154]), np.array([13,255,255]),9)
-        green_circle = Figure("circle", "green", (0,176,80), np.array([40, 100, 50]), np.array([100, 255, 255]),9)
-        self.lights = [red_circle, green_circle]
+        self.red_circle = Figure("circle", "red", (255,0,0), np.array([0,146,148]), np.array([179,255,185]),9)
+        self.green_circle = Figure("circle", "green", (0,176,80), np.array([40, 100, 50]), np.array([100, 255, 255]),9)
+        self.lights = [self.red_circle, self.green_circle]
+        self.last_time_traffic_light_detected = 0
+        self.delay_traffic_lights_detections = 2
 
     def create_kalman_filter(self): #inicializar kalman de practica 4
         """Initialize the Kalman filter."""
@@ -134,30 +137,34 @@ class Tracker:
         return img2
     
     def run(self):
-        while True:
-            frame = self.picam.capture_array()
-            
-            key = cv2.waitKey(1) & 0xFF
+        try:
+            while True:
+                frame = self.picam.capture_array()
+                self.current_time_traffic_light_detection = time.time()
+                
+                key = cv2.waitKey(1) & 0xFF
 
-            if key == ord('s') and not self.is_tracking:
-                self.initialize_kalman(frame)
-            
-                self.is_tracking = True
+                if key == ord('s') and not self.is_tracking:
+                    self.initialize_kalman(frame)
+                
+                    self.is_tracking = True
 
-            if self.is_tracking:
-                self.detect_traffic_light_color(frame)
-                frame = self.correct_and_predict(frame)
+                if self.is_tracking:
+                    if self.current_time_traffic_light_detection - self.last_time_traffic_light_detected >= self.delay_traffic_lights_detections:
+                        self.detect_traffic_light_color(frame)
+                        self.last_time_traffic_light_detected = self.current_time_traffic_light_detection
+                    frame = self.correct_and_predict(frame)
 
-            cv2.imshow("picam", frame)
+                cv2.imshow("picam", frame)
 
-            if key == ord('q'):
-                print("Tecla 'q' presionada. Deteniendo...")
-                break
+                if key == ord('q'):
+                    print("Tecla 'q' presionada. Deteniendo...")
+                    break
+        finally:
+            self.picam.stop()
+            cv2.destroyAllWindows()
 
-        self.picam.stop()
-        cv2.destroyAllWindows()
-
-    def detect_traffic_light_color(self,frame): #de chat para la parte opcional, para detectar los colores de señales de trafico, rojo y verde
+    def detect_traffic_light_color(self,frame): 
         """
         Detect the color of traffic lights in the given frame.
 
@@ -168,27 +175,32 @@ class Tracker:
             str: The detected color ("Red", "Green", or "Unknown").
         """
         hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
-        
+
         for light in self.lights:
             mask = cv2.inRange(hsv, light.get_lower_color(), light.get_upper_color())
-            # Apply erosion to reduce noise
-            kernel = np.ones((5, 5), np.uint8) #Dimensiones del kernel 
+        
+            # Reducir las iteraciones de erosión y dilatación
+            kernel = np.ones((5, 5), np.uint8)
             eroded = cv2.erode(mask, kernel, iterations=6)
+            dilated = cv2.dilate(eroded, kernel, iterations=6)
             
-            # Find contours in the frame
-            contours, _ = cv2.findContours(eroded, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+            contours, _ = cv2.findContours(dilated, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
             for contour in contours:
-                # Check if the contour resembles a circle
-                area = cv2.contourArea(contour)
                 perimeter = cv2.arcLength(contour, True)
-                if perimeter == 0:  # Avoid division by zero
+                if perimeter == 0:
                     continue
+                    
+                # Solo verificamos circularidad, sin importar el tamaño
+                area = cv2.contourArea(contour)
                 circularity = 4 * np.pi * (area / (perimeter ** 2))
-                if 0.8 <= circularity <= 1.2:  # Circularity threshold for circles
-                    if light.color_name == "green":
-                        print(f"GREEN traffic light detected. I'll continue.")
-                    else:
+                if 0.8 <= circularity <= 1.2:
+                    if light.color_name == "red":
                         print(f"RED traffic light detected. I'll stop.")
+                        return
+                    elif light.color_name == "green":
+                        print(f"GREEN traffic light detected. I'll continue.")
+                        return
+        
 
 
 if __name__ == "__main__":
