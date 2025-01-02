@@ -138,10 +138,22 @@ class Tracker:
     
     def run(self):
         try:
+            prev_time = 0
             while True:
                 frame = self.picam.capture_array()
                 self.current_time_traffic_light_detection = time.time()
-                
+
+                current_time = time.time()
+                # Calcular FPS
+                fps = 1.0 / (current_time - prev_time)
+                prev_time = current_time
+
+                fps = int(fps)
+                fps_text = f"{fps} FPS"
+                # Muestra los FPS en la esquina superior derecha del vídeo
+                height, width, _ = frame.shape
+                cv2.putText(frame, fps_text, (width - 150, 50), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 0), 2, cv2.LINE_AA)
+                    
                 key = cv2.waitKey(1) & 0xFF
 
                 if key == ord('s') and not self.is_tracking:
@@ -160,6 +172,8 @@ class Tracker:
                 if key == ord('q'):
                     print("Tecla 'q' presionada. Deteniendo...")
                     break
+        except:
+            pass
         finally:
             self.picam.stop()
             cv2.destroyAllWindows()
@@ -196,9 +210,19 @@ class Tracker:
                 if 0.8 <= circularity <= 1.2:
                     if light.color_name == "red":
                         print(f"RED traffic light detected. I'll stop.")
+                        cv2.putText(frame, "RED", (20, 20 - 5),
+                                    cv2.FONT_HERSHEY_SIMPLEX,
+                                    0.5,
+                                    (0,0,255),
+                                    2)
                         return
                     elif light.color_name == "green":
                         print(f"GREEN traffic light detected. I'll continue.")
+                        cv2.putText(frame, "GREEN", (20, 20 - 5),
+                                    cv2.FONT_HERSHEY_SIMPLEX,
+                                    0.5,
+                                    (0,255,0),
+                                    2)
                         return
         
 
@@ -208,8 +232,6 @@ if __name__ == "__main__":
 
     print("Presiona 's' para seleccionar el ROI y empezar el seguimiento, y 'q' para detener.")
 
-    try:
-        tracker.run()
+    tracker.run()
 
-    finally:
-        print("Seguimiento finalizado.")
+    print("Seguimiento finalizado.")
