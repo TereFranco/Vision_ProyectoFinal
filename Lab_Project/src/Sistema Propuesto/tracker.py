@@ -25,7 +25,12 @@ class Tracker:
         self.delay_traffic_lights_detections = 2
 
     def create_kalman_filter(self): #inicializar kalman de practica 4
-        """Initialize the Kalman filter."""
+        """
+        Create and initialize a Kalman filter for tracking.
+
+        Returns:
+            cv2.KalmanFilter: The initialized Kalman filter.
+        """
         kf = cv2.KalmanFilter(4, 2)
         kf.measurementMatrix = np.array([[1, 0, 0, 0], [0, 1, 0, 0]], dtype=np.float32)
         kf.transitionMatrix = np.array([[1, 0, 1, 0], [0, 1, 0, 1], [0, 0, 1, 0], [0, 0, 0, 1]], dtype=np.float32)
@@ -61,6 +66,12 @@ class Tracker:
         cv2.normalize(self.crop_hist, self.crop_hist, 0, 255, cv2.NORM_MINMAX)
 
     def select_roi(self, frame):
+        """
+        Allows the user to select the Region of Interest (ROI) on the given frame.
+
+        Args:
+            frame (numpy.ndarray): The current frame from which the user will select the ROI.
+        """
         print("Selecciona el ROI para comenzar el seguimiento.")
         self.bbox = cv2.selectROI("Select Object", frame, False)
         cv2.destroyWindow("Select Object")
@@ -137,6 +148,10 @@ class Tracker:
         return img2
     
     def run(self):
+        """
+        Main loop to run the tracking system. Captures frames from the camera,
+        initializes the Kalman filter, performs tracking, and detects traffic lights.
+        """
         try:
             prev_time = 0
             while True:

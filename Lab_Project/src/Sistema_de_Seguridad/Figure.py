@@ -11,14 +11,14 @@ class Figure:
 
     def color_within_tolerance(self, other_color: tuple[int, int, int], tolerance: int = 60) -> bool:
         """
-        Verifica si el color está dentro de un rango de tolerancia.
+        Checks if the color is within a tolerance range.
 
         Args:
-            other_color (tuple[int, int, int]): Color a comparar.
-            tolerance (int): Rango de tolerancia permitido para cada componente RGB.
+            other_color (tuple[int, int, int]): Color to compare.
+            tolerance (int): Allowed tolerance range for each RGB component.
 
         Returns:
-            bool: True si el color está dentro del rango, False en caso contrario.
+            bool: True if the color is within the range, False otherwise.
         """
         return all(abs(c1 - c2) <= tolerance for c1, c2 in zip(self.color_rgb, other_color))
 
