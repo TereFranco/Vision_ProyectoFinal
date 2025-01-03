@@ -28,7 +28,7 @@ Finally, the tracker is launched, which manually identifies the cars (it has to 
 
 ### Camera Calibration
 We use the function `findChessboardCorners()` to find the corners in the figure and the function `get_calibration_points()` that we designed to get the corners in 3D.
-![Camera Calibration](./Lab_Project/src/Calibration/Images_calibration/Output.jpg)
+![Camera Calibration](./Lab_Project/src/Calibration/Images_calibration/Output/calibrated2.jpg.jpg)
 
 ### System Block Diagram
 The block diagram visually shows the relationship between the modules and the different functions of the entire project.
