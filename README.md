@@ -19,6 +19,7 @@ This project aims to develop a comprehensive computer vision system that can per
 
 ## Methodology
 How it is executed:
+
 First, we perform camera calibration to obtain intrinsic and extrinsic parameters using a chessboard. Then, we use the pictures to calibrate the camera. 
 
 In a different module (this part is adapted to run in real-time), the security system has a memorized password pattern. Image by image, it will search to identify any of the figures corresponding to the pattern and finally check if it is correct. If it is, it will launch the tracker; if not, it will ask to re-enter the password.
@@ -27,14 +28,14 @@ Finally, the tracker is launched, which manually identifies the cars (it has to 
 
 ### Camera Calibration
 We use the function `findChessboardCorners()` to find the corners in the figure and the function `get_calibration_points()` that we designed to get the corners in 3D.
-![Camera Calibration](src\Calibration\Images_calibration\Output.jpg)
+![Camera Calibration](Lab_Project\src\Calibration\Images_calibration\Output.jpg)
 
 ### System Block Diagram
 The block diagram visually shows the relationship between the modules and the different functions of the entire project.
-![Camera Calibration](DiagramaBloquesVision.drawio.png)
+![Camera Calibration](Lab_Project\DiagramaBloquesVision.drawio.png)
 
 ### Image Transformation Sequence
-```markdown
+
 The image undergoes different transformations in both processes (security system and proposed system) to achieve our objectives.
 
 1. **Security System:**
@@ -42,7 +43,6 @@ The image undergoes different transformations in both processes (security system
 
 2. **Proposed System:**
   - HSV ➡️ Segmented by color ➡️ Eroded Mask ➡️ Mask dilated 
-```
 
 ### Security System
 We can detect polygons with any number of sides and any color. To achieve this, we first determine the exact RGB color of the polygon and the number of vertex.
@@ -54,7 +54,7 @@ With a binarized image containing only the desired shape, we proceed to determin
 #### Information Extraction
 We implement a loop that uses the previously defined pattern detection algorithm to set a password and repeatedly prompts for it until it is entered correctly.
 
-To improve detection accuracy when a figure appears or disappears, we add detected figures to a queue for a specified number of frames. A positive detection is confirmed only when the figure fills the entire queue (currently there is a 4 length queue), and a negative detection is confirmed when the queue is filled with `None` values after a figure has been detected.
+To improve detection accuracy when a figure appears or disappears, we add detected figures in the frame to a queue. 
 
 For the password to be accepted, the sequence must be the same. The first figure must be detected first, followed by the second, and so on. The check is performed only after the entire sequence has been entered. If the password is correct, the image frame will be highlighted in green; if incorrect, it will be highlighted in red.
 
